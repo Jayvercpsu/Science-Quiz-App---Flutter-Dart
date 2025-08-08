@@ -1,0 +1,11 @@
+✅ Sample Flow:
+Open App → See “Grade 7 - Quarter 1”
+
+Tap → See Lesson 1 - 4
+
+Tap Lesson 1 → Read content → Tap Start Quiz
+
+Finish quiz → See Score + Stars
+
+Go back → Continue next lesson or redo
+
