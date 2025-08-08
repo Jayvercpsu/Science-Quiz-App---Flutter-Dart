@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import '../utils/sound_player.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:animate_do/animate_do.dart';
 import '../constants/app_assets.dart';
 import '../constants/app_colors.dart';
+import '../components/onboarding/loading_indicator.dart';
+import '../components/onboarding/primary_button.dart';
+import '../components/onboarding/custom_text_button.dart';
+import '../components/onboarding/wavecard.dart';
+import '../components/onboarding/custom_icon_button.dart';
 
 class OnboardingView extends StatefulWidget {
   const OnboardingView({super.key});
@@ -14,6 +20,14 @@ class OnboardingView extends StatefulWidget {
 class _OnboardingViewState extends State<OnboardingView> {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
+
+  @override
+  void dispose() {
+    SoundPlayer.dispose(); // clean up sound
+    _pageController.dispose(); // already required
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -27,7 +41,8 @@ class _OnboardingViewState extends State<OnboardingView> {
               leading: Padding(
                 padding: const EdgeInsets.all(7),
                 child: CustomIconButton(
-                  onTap: () {
+                  onTap: () async {
+                    await SoundPlayer.playTap();
                     _pageController.previousPage(
                       duration: const Duration(milliseconds: 500),
                       curve: Curves.ease,
@@ -74,8 +89,20 @@ class _OnboardingViewState extends State<OnboardingView> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: PrimaryButton(
-              onTap: () {
+              onTap: () async {
+                await SoundPlayer.playTap();
                 if (_currentIndex == (onboardingList.length - 1)) {
+                  // Show loading first, then navigate
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => const Center(child: StaggeredDotsLoader()),
+                  );
+
+                  Future.delayed(const Duration(seconds: 2), () {
+                    Navigator.pop(context); // Close loading
+                    Navigator.pushReplacementNamed(context, '/home');
+                  });
                 } else {
                   _pageController.nextPage(
                     duration: const Duration(milliseconds: 500),
@@ -88,137 +115,19 @@ class _OnboardingViewState extends State<OnboardingView> {
                   : 'Continue',
             ),
           ),
-          CustomTextButton(
-            onPressed: () {
-              Navigator.pushReplacementNamed(context, '/home');
-            },
-            text: 'Skip',
-          ),
+
+          // Show Skip only if not on the last page
+          if (_currentIndex != (onboardingList.length - 1))
+            CustomTextButton(
+              onPressed: () async {
+                await SoundPlayer.playTap();
+                Navigator.pushReplacementNamed(context, '/home');
+              },
+              text: 'Skip',
+            ),
+
           const SizedBox(height: 20),
         ],
-      ),
-    );
-  }
-}
-
-class CustomTextButton extends StatelessWidget {
-  final VoidCallback onPressed;
-  final String text;
-  final Color? color;
-  final double? fontSize;
-  const CustomTextButton({
-    required this.onPressed,
-    required this.text,
-    this.fontSize,
-    this.color,
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TextButton(
-      onPressed: onPressed,
-      child: Text(
-        text,
-        style: TextStyle(
-          color: color ?? const Color(0xFF329494),
-          fontSize: fontSize ?? 14,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-}
-
-class PrimaryButton extends StatefulWidget {
-  final VoidCallback onTap;
-  final String text;
-  final double? width;
-  final double? height;
-  final double? borderRadius;
-  final double? fontSize;
-  final Color? color;
-  const PrimaryButton({
-    required this.onTap,
-    required this.text,
-    this.height,
-    this.width,
-    this.borderRadius,
-    this.fontSize,
-    this.color,
-    Key? key,
-  }) : super(key: key);
-
-  @override
-  State<PrimaryButton> createState() => _PrimaryButtonState();
-}
-
-class _PrimaryButtonState extends State<PrimaryButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  final Duration _animationDuration = const Duration(milliseconds: 300);
-  final Tween<double> _tween = Tween<double>(begin: 1.0, end: 0.95);
-  @override
-  void initState() {
-    _controller = AnimationController(vsync: this, duration: _animationDuration)
-      ..addListener(() {
-        setState(() {});
-      });
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    bool isDarkMode(BuildContext context) =>
-        Theme.of(context).brightness == Brightness.dark;
-
-    return GestureDetector(
-      onTap: () {
-        _controller.forward().then((_) {
-          _controller.reverse();
-        });
-        widget.onTap();
-      },
-      child: ScaleTransition(
-        scale: _tween.animate(
-          CurvedAnimation(
-            parent: _controller,
-            curve: Curves.easeOut,
-            reverseCurve: Curves.easeIn,
-          ),
-        ),
-        child: Container(
-          height: widget.height ?? 60,
-          alignment: Alignment.center,
-          width: widget.width ?? double.maxFinite,
-          decoration: BoxDecoration(
-            color:
-                widget.color ??
-                (isDarkMode(context) ? Colors.black : const Color(0xFF329494)),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF329494).withOpacity(0.2),
-                blurRadius: 7,
-                offset: const Offset(0, 5),
-              ),
-            ],
-            borderRadius: BorderRadius.circular(widget.borderRadius ?? 10),
-          ),
-          child: Text(
-            widget.text,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: widget.color == null ? Colors.white : Colors.black,
-              fontSize: widget.fontSize ?? 20,
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -259,34 +168,43 @@ class OnboardingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        FadeInDown(
-          duration: const Duration(milliseconds: 500),
-          child: Text(
-            onboarding.title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return SizedBox(
+      height: screenHeight * 0.3,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            FadeInDown(
+              duration: const Duration(milliseconds: 500),
+              child: Text(
+                onboarding.title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-        const SizedBox(height: 10),
-        FadeInUp(
-          duration: const Duration(milliseconds: 500),
-          child: Text(
-            onboarding.description,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.black,
+            const SizedBox(height: 10),
+            FadeInUp(
+              duration: const Duration(milliseconds: 500),
+              child: Text(
+                onboarding.description,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -321,137 +239,10 @@ science step by step.''',
   ),
   Onboarding(
     title: '''Answer Quizzes
-and Earn Stars!''',
+and Analyze Results!''',
     image: AppAssets.kOnboarding3,
     description: '''Test your knowledge with fun quizzes
 at the end of each lesson. Show
 how much you've learned!''',
   ),
 ];
-
-class WaveCard extends StatelessWidget {
-  final double? height;
-  final Color? color;
-  const WaveCard({super.key, this.height, this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: height ?? 350,
-      width: double.infinity,
-      color: color ?? AppColors.kPrimary.withOpacity(0.15),
-      child: CustomPaint(painter: WavePainter(color: AppColors.kWhite)),
-    );
-  }
-}
-
-class WavePainter extends CustomPainter {
-  final Color color;
-
-  WavePainter({required this.color});
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    final path = Path();
-    path.moveTo(size.width, size.height);
-    path.lineTo(size.width, size.height * 0.75);
-    path.quadraticBezierTo(
-      size.width * 0.85,
-      size.height * 0.625,
-      size.width * 0.5,
-      size.height * 0.75,
-    );
-    path.quadraticBezierTo(
-      size.width * 0.25,
-      size.height * 0.875,
-      0,
-      size.height * 0.75,
-    );
-    path.lineTo(0, size.height);
-    path.close();
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
-  }
-}
-
-class CustomIconButton extends StatefulWidget {
-  final VoidCallback onTap;
-  final double? size;
-  final Color? color;
-  final String icon;
-  final Color? iconColor;
-  const CustomIconButton({
-    required this.onTap,
-    required this.icon,
-    this.size,
-    this.color,
-    this.iconColor,
-    Key? key,
-  }) : super(key: key);
-
-  @override
-  State<CustomIconButton> createState() => _CustomIconButtonState();
-}
-
-class _CustomIconButtonState extends State<CustomIconButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  final Duration _animationDuration = const Duration(milliseconds: 300);
-  final Tween<double> _tween = Tween<double>(begin: 1.0, end: 0.95);
-  @override
-  void initState() {
-    _controller = AnimationController(vsync: this, duration: _animationDuration)
-      ..addListener(() {
-        setState(() {});
-      });
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    bool isDarkMode(BuildContext context) =>
-        Theme.of(context).brightness == Brightness.dark;
-    return GestureDetector(
-      onTap: () {
-        _controller.forward().then((_) {
-          _controller.reverse();
-        });
-        widget.onTap();
-      },
-      child: ScaleTransition(
-        scale: _tween.animate(
-          CurvedAnimation(
-            parent: _controller,
-            curve: Curves.easeOut,
-            reverseCurve: Curves.easeIn,
-          ),
-        ),
-        child: Container(
-          height: widget.size ?? 40,
-          alignment: Alignment.center,
-          width: widget.size ?? 40,
-          padding: const EdgeInsets.all(5),
-          decoration: const BoxDecoration(
-            color: AppColors.kWhite,
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(Icons.arrow_back),
-        ),
-      ),
-    );
-  }
-}
