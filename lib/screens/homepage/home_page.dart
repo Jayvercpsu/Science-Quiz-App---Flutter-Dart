@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../utils/sound_player.dart';
 import 'package:animate_do/animate_do.dart';
 import '../../constants/app_colors.dart';
 import '../../components/onboarding/loading_indicator.dart';
@@ -8,18 +9,21 @@ import '../../components/onboarding/wavecard.dart';
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-  void _navigateWithLoading(BuildContext context, String route) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: StaggeredDotsLoader()),
-    );
+void _navigateWithLoading(BuildContext context, String route) async {
+  await SoundPlayer.playTap(); // 🔊 Play sound first
 
-    Future.delayed(const Duration(seconds: 2), () {
-      Navigator.pop(context);
-      Navigator.pushNamed(context, route);
-    });
-  }
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => const Center(child: StaggeredDotsLoader()),
+  );
+
+  Future.delayed(const Duration(seconds: 2), () {
+    Navigator.pop(context);
+    Navigator.pushNamed(context, route);
+  });
+}
+
 
   @override
   Widget build(BuildContext context) {

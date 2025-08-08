@@ -23,8 +23,8 @@ class _OnboardingViewState extends State<OnboardingView> {
 
   @override
   void dispose() {
-    SoundPlayer.dispose(); // clean up sound
-    _pageController.dispose(); // already required
+    SoundPlayer();  
+    _pageController.dispose(); 
     super.dispose();
   }
 
