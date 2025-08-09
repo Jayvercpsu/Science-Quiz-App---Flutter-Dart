@@ -1,6 +1,5 @@
-// pages/home/home_page.dart
 import 'package:flutter/material.dart';
-import '../../utils/sound_player.dart'; 
+import '../../utils/sound_player.dart';
 import '../../constants/app_colors.dart';
 import '../../components/onboarding/wavecard.dart';
 import '../../components/home/welcome_section.dart';
@@ -10,20 +9,47 @@ import '../../components/onboarding/loading_indicator.dart';
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-  void _navigateWithTap(BuildContext context, String route) async {
-    await SoundPlayer.playTap(); // 🔊 Play sound first
+  void _navigateWithTap(
+    BuildContext context,
+    String route,
+    String title,
+  ) async {
+    await SoundPlayer.playTap();
 
-    // Show loading overlay
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(child: StaggeredDotsLoader()),
+      builder: (_) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const StaggeredDotsLoader(),
+              const SizedBox(height: 16),
+              Flexible(
+                child: Text(
+                  'Loading $title...',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.visible,
+                  softWrap: true,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
 
-    // Simulate short loading delay
     await Future.delayed(const Duration(seconds: 2));
 
-    // Close loader and navigate
     Navigator.of(context, rootNavigator: true).pop();
     Navigator.pushNamed(context, route);
   }
@@ -34,7 +60,6 @@ class HomePage extends StatelessWidget {
       backgroundColor: AppColors.kWhite,
       body: Stack(
         children: [
-          // Enhanced background with gradient overlay
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -60,16 +85,14 @@ class HomePage extends StatelessWidget {
                 children: [
                   const SizedBox(height: 32),
 
-                  // Welcome Section Component
                   const WelcomeSection(),
 
                   const SizedBox(height: 50),
 
-                  // Quarters List Component with Scroll Indicator
                   Expanded(
                     child: QuartersList(
-                      onQuarterSelected: (route) =>
-                          _navigateWithTap(context, route),
+                      onQuarterSelected: (route, title) =>
+                          _navigateWithTap(context, route, title),
                     ),
                   ),
 
