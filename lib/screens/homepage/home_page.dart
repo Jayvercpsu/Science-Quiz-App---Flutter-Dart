@@ -1,29 +1,32 @@
+// pages/home/home_page.dart
 import 'package:flutter/material.dart';
-import '../../utils/sound_player.dart';
-import 'package:animate_do/animate_do.dart';
+import '../../utils/sound_player.dart'; 
 import '../../constants/app_colors.dart';
-import '../../components/onboarding/loading_indicator.dart';
-import '../../components/onboarding/primary_button.dart';
 import '../../components/onboarding/wavecard.dart';
+import '../../components/home/welcome_section.dart';
+import '../../components/home/quarters_list.dart';
+import '../../components/onboarding/loading_indicator.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-void _navigateWithLoading(BuildContext context, String route) async {
-  await SoundPlayer.playTap(); // 🔊 Play sound first
+  void _navigateWithTap(BuildContext context, String route) async {
+    await SoundPlayer.playTap(); // 🔊 Play sound first
 
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => const Center(child: StaggeredDotsLoader()),
-  );
+    // Show loading overlay
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: StaggeredDotsLoader()),
+    );
 
-  Future.delayed(const Duration(seconds: 2), () {
-    Navigator.pop(context);
+    // Simulate short loading delay
+    await Future.delayed(const Duration(seconds: 2));
+
+    // Close loader and navigate
+    Navigator.of(context, rootNavigator: true).pop();
     Navigator.pushNamed(context, route);
-  });
-}
-
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,85 +34,46 @@ void _navigateWithLoading(BuildContext context, String route) async {
       backgroundColor: AppColors.kWhite,
       body: Stack(
         children: [
-          const WaveCard(height: 300),
+          // Enhanced background with gradient overlay
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  AppColors.kPrimary.withOpacity(0.05),
+                  AppColors.kWhite,
+                  AppColors.kPrimary.withOpacity(0.02),
+                ],
+                stops: const [0.0, 0.5, 1.0],
+              ),
+            ),
+          ),
+
+          const WaveCard(height: 320),
 
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 32),
 
-                  FadeInDown(
-                    duration: const Duration(milliseconds: 500),
-                    child: const Text(
-                      'Welcome!',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.kPrimary,
-                      ),
-                    ),
-                  ),
+                  // Welcome Section Component
+                  const WelcomeSection(),
 
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 50),
 
-                  FadeInDown(
-                    duration: const Duration(milliseconds: 600),
-                    child: const Text(
-                      'Tap to start learning Grade 7 Quarters',
-                      style: TextStyle(fontSize: 16, color: Colors.black54),
-                    ),
-                  ),
-
+                  // Quarters List Component with Scroll Indicator
                   Expanded(
-                    child: FadeInUp(
-                      duration: const Duration(milliseconds: 700),
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            PrimaryButton(
-                              text: 'Grade 7 - Quarter 1',
-                              onTap: () =>
-                                  _navigateWithLoading(context, '/quarter1'),
-                              height: 60,
-                              fontSize: 18,
-                              borderRadius: 12,
-                            ),
-                            const SizedBox(height: 16),
-                            PrimaryButton(
-                              text: 'Grade 7 - Quarter 2',
-                              onTap: () =>
-                                  _navigateWithLoading(context, '/quarter2'),
-                              height: 60,
-                              fontSize: 18,
-                              borderRadius: 12,
-                            ),
-                            const SizedBox(height: 16),
-                            PrimaryButton(
-                              text: 'Grade 7 - Quarter 3',
-                              onTap: () =>
-                                  _navigateWithLoading(context, '/quarter3'),
-                              height: 60,
-                              fontSize: 18,
-                              borderRadius: 12,
-                            ),
-                            const SizedBox(height: 16),
-                            PrimaryButton(
-                              text: 'Grade 7 - Quarter 4',
-                              onTap: () =>
-                                  _navigateWithLoading(context, '/quarter4'),
-                              height: 60,
-                              fontSize: 18,
-                              borderRadius: 12,
-                            ),
-                          ],
-                        ),
-                      ),
+                    child: QuartersList(
+                      onQuarterSelected: (route) =>
+                          _navigateWithTap(context, route),
                     ),
                   ),
+
+                  const SizedBox(height: 16),
                 ],
               ),
             ),

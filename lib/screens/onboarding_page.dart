@@ -23,8 +23,8 @@ class _OnboardingViewState extends State<OnboardingView> {
 
   @override
   void dispose() {
-    SoundPlayer();  
-    _pageController.dispose(); 
+    SoundPlayer();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -92,7 +92,6 @@ class _OnboardingViewState extends State<OnboardingView> {
               onTap: () async {
                 await SoundPlayer.playTap();
                 if (_currentIndex == (onboardingList.length - 1)) {
-                  // Show loading first, then navigate
                   showDialog(
                     context: context,
                     barrierDismissible: false,
@@ -100,7 +99,7 @@ class _OnboardingViewState extends State<OnboardingView> {
                   );
 
                   Future.delayed(const Duration(seconds: 2), () {
-                    Navigator.pop(context); // Close loading
+                    Navigator.pop(context);
                     Navigator.pushReplacementNamed(context, '/home');
                   });
                 } else {
@@ -116,11 +115,20 @@ class _OnboardingViewState extends State<OnboardingView> {
             ),
           ),
 
-          // Show Skip only if not on the last page
           if (_currentIndex != (onboardingList.length - 1))
             CustomTextButton(
               onPressed: () async {
                 await SoundPlayer.playTap();
+
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (_) => const Center(child: StaggeredDotsLoader()),
+                );
+
+                await Future.delayed(const Duration(seconds: 1));
+
+                Navigator.pop(context);
                 Navigator.pushReplacementNamed(context, '/home');
               },
               text: 'Skip',
